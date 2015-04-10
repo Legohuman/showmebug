@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+<head>
+  <title>Test rooms page</title>
+</head>
+<body>
+<div>
+  <label for="roomUid">Room Id</label>
+  <input type="text" id="roomUid"/>
+</div>
+
+<div>
+  <label for="peerName">Peer Name</label>
+  <input type="text" id="peerName"/>
+</div>
+
+<div>
+  <label for="message">Message</label>
+  <input type="text" id="message"/>
+</div>
+<div>
+  <h3>Response</h3>
+
+  <div id="response"></div>
+</div>
+
+<div>
+  <button id="createRoom">Create room</button>
+  <button id="joinRoom">Join room</button>
+  <button id="leaveRoom">Leave room</button>
+  <button id="destroyRoom">Destroy room</button>
+  <button id="sendMessage">Send message</button>
+  <button id="listRooms">List rooms</button>
+  <button id="listPeers">List peers</button>
+</div>
+
+<script src="/js/jquery-2.1.3.min.js"></script>
+<script src="/js/adapter.js"></script>
+<script src="/js/socket.io-1.3.4.js"></script>
+<script>
+  (function () {
+    var socket = io(),
+      $peerName = $('#peerName'),
+      $roomUid = $('#roomUid'),
+      $response = $('#response');
+
+    $('#createRoom').click(function () {
+      socket.emit('join', pub(), room());
+    });
+
+    $('#joinRoom').click(function () {
+      socket.emit('join', sub(), room());
+    });
+
+    $('#leaveRoom').click(function () {
+      socket.emit('leave', sub(), room());
+    });
+
+    $('#destroyRoom').click(function () {
+      socket.emit('leave', pub(), room());
+    });
+
+    $('#sendMessage').click(function () {
+      socket.emit('message', $('#message').val());
+    });
+
+    $('#listRooms').click(function () {
+      socket.emit('rooms');
+    });
+
+    $('#listPeers').click(function () {
+      socket.emit('peers');
+    });
+
+    socket.on('joined', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('not_joined', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('leaved', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('not_leaved', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('message', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('not_sent', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('rooms', function(response){$response.text(JSON.stringify(arguments))});
+    socket.on('peers', function(response){$response.text(JSON.stringify(arguments))});
+
+    function room() {
+      return $roomUid.val()
+    }
+
+    function pub() {
+      return {
+        name: $peerName.val(),
+        role: 'pub'
+      }
+    }
+
+    function sub() {
+      return {
+        name: $peerName.val(),
+        role: 'sub'
+      }
+    }
+  })();
+</script>
+</body>
+</html>
