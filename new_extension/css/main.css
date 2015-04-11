@@ -40,12 +40,5 @@
   bottom: 0;
   height: 150px;
   background: #fff;
-}
-
-#allMessages{
-  overflow: auto;
-}
-
-#pinnedMessage{
-  overflow: auto;
+  overflow-y: scroll;
 }
