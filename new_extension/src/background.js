@@ -40,7 +40,7 @@ var app = (function () {
 
 
   function room() {
-    return '666';
+    return null;
   }
 
   function pub(peerName) {
@@ -121,11 +121,32 @@ var app = (function () {
       chrome.debugger.onEvent.addListener(onEvent);
 
       function onEvent(debuggeeId, message, params) {
-        if (tabId != debuggeeId.tabId)
+        var text;
+
+        if (tabId != debuggeeId.tabId) {
           return;
+        }
+
         if (message === 'Console.messageAdded') {
-          console.log(params.message.text);
-          app.sendMessageToChannel(params.message.text);
+          console.debug(params.message.text);
+          text = JSON.stringify({kind: 'console', obj: params.message});
+
+          app.sendMessageToChannel(text);
+        } else if (message === 'Network.requestWillBeSent') {
+          console.debug(params.request);
+          text = JSON.stringify({
+            kind: 'network.request',
+            obj: params.request
+          });
+
+          app.sendMessageToChannel(text);
+        } else if (message === 'Network.responseReceived') {
+          console.debug(params.response);
+          text = JSON.stringify({
+            kind: 'network.response', obj: params.response
+          });
+
+          app.sendMessageToChannel(text);
         }
       }
     });
