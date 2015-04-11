@@ -196,6 +196,9 @@ var app = (function () {
 
   socket.on('joined', function (peer, room) {
     console.log('Join: ' + peer + ' : room ' + room);
+
+    app.currentRoom = room;
+
     chrome.extension.sendMessage({roomUID: room});
   });
 
@@ -214,6 +217,11 @@ chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
   console.log('Get message from popup: ' + msg.method);
 
   switch (msg.method) {
+    case 'popupInit':
+      if (app.currentRoom) {
+        chrome.extension.sendMessage({roomUID: app.currentRoom});
+      }
+      break;
     case 'createRoom':
       app.createRoom(msg.name);
       break;

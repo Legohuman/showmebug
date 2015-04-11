@@ -9,6 +9,15 @@
             $toggleCapturing = $('#toggleCapturing'),
             $joinButton = $('#joinBtn');
 
+        chrome.extension.onMessage.addListener(function (msg) {
+            console.log('Get msg from background');
+            if (msg.roomUID) {
+                $roomId.text(msg.roomUID);
+            }
+        });
+
+        chrome.extension.sendMessage({method: 'popupInit'});
+
         $createRoom.click(function () {
             chrome.extension.sendMessage({method: 'createRoom', name: $peerName.val()});
         });
@@ -21,13 +30,6 @@
 
         $joinButton.click(function () {
             chrome.extension.sendMessage({method: 'join'});
-        });
-
-        chrome.extension.onMessage.addListener(function (msg) {
-            console.log('Get msg from background');
-            if (msg.roomUID) {
-                $roomId.text(msg.roomUID);
-            }
         });
     });
 })();
