@@ -58,6 +58,7 @@ var app = (function () {
   }
 
   app.createRoom = function (peerName) {
+    console.log('create room, socket id', socket.id, peerName);
     socket.emit('join', pub(peerName), room());
   };
 
@@ -92,6 +93,7 @@ var app = (function () {
       function gotDescription(desc) {
         pc.setLocalDescription(new RTCSessionDescription(desc));
         console.log('Local sdp: ', desc);
+        console.log('Send sdp, socket id', socket.id);
         socket.emit('message', {"sdp": desc});
       }
     }, function (error) {

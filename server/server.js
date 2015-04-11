@@ -51,8 +51,6 @@ io.on('connection', function (socket) {
     console.log('join', peer, room);
     // store the username in the socket session for this client
     socket.username = peer.name;
-    // store the room name in the socket session for this client
-    socket.room = room;
     // add the client's username to the global list
     peers[peer.name] = peer;
 
@@ -66,6 +64,8 @@ io.on('connection', function (socket) {
         socket.emit('not_joined', 'Room is full ' + room);
       } else {
         existingRoom.peers.sub =  peer;
+        // store the room name in the socket session for this client
+        socket.room = room;
         //
         socket.join(room);
         console.log('joined', peer, room);
@@ -73,6 +73,7 @@ io.on('connection', function (socket) {
         socket.broadcast.to(room).emit('joined', peer, room);
       }
     } else {
+      console.log('pub socket id ', socket.id);
       room = generateUid();
       rooms[room] = {
         uid: room,
@@ -83,6 +84,8 @@ io.on('connection', function (socket) {
          }
         }
       };
+      // store the room name in the socket session for this client
+      socket.room = room;
       //
       socket.join(room);
       console.log('joined', peer, room);
@@ -92,11 +95,13 @@ io.on('connection', function (socket) {
   });
 
   socket.on('message', function (msg) {
-    console.log('message received', msg);
+    console.log('message received from ', socket.id, msg);
     var targetRoom = rooms[socket.room];
     if (!targetRoom) {
+      console.log('not_sent', 'No such room ' + socket.room);
       socket.emit('not_sent', 'No such room ' + socket.room);
     } else {
+      console.log('message broadcasted to ', socket.room);
       socket.broadcast.to(socket.room).emit('message', msg);
     }
   });
