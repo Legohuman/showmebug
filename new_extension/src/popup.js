@@ -4,7 +4,7 @@
     $(function () {
         var $peerName = $('#peerName'),
             $createRoom = $('#createRoom'),
-            $startRoom = $('#startRoom'),
+            $roomId = $('#roomId'),
 
             $toggleCapturing = $('#toggleCapturing'),
             $joinButton = $('#joinBtn');
@@ -12,11 +12,6 @@
         $createRoom.click(function () {
             chrome.extension.sendMessage({method: 'createRoom', name: $peerName.val()});
         });
-
-        $startRoom.click(function () {
-            chrome.extension.sendMessage({method: 'startRoom', name: $peerName.val()});
-        });
-
 
         $toggleCapturing.click(function () {
             chrome.extension.sendMessage({method: 'toggleStart'});
@@ -28,6 +23,11 @@
             chrome.extension.sendMessage({method: 'join'});
         });
 
-
+        chrome.extension.onMessage.addListener(function (msg) {
+            console.log('Get msg from background');
+            if (msg.roomUID) {
+                $roomId.text(msg.roomUID);
+            }
+        });
     });
 })();

@@ -62,10 +62,6 @@ var app = (function () {
     socket.emit('join', pub(peerName), room());
   };
 
-  app.startRoom = function (peerName) {
-    socket.emit('join', sub(peerName), room());
-  };
-
   app.sendMessageToChannel = function (text) {
     if (channelOpened) {
       sendChannel.send(text);
@@ -175,7 +171,8 @@ var app = (function () {
   });
 
   socket.on('joined', function (peer, room) {
-    console.log('Join: ' + peer + ' : room' + room);
+    console.log('Join: ' + peer + ' : room ' + room);
+    chrome.extension.sendMessage({roomUID: room});
   });
 
   socket.on('ready', function (message) {
@@ -196,9 +193,6 @@ chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
     case 'createRoom':
       app.createRoom(msg.name);
       break;
-    case 'startRoom':
-      app.startRoom(msg.name);
-      break;
     case 'toggleStart':
       if (app.states.stopped === app.extensionState) {
         app.start();
@@ -207,7 +201,7 @@ chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
       }
       break;
     case 'join':
-      chrome.tabs.create({'url': chrome.extension.getURL('test.html')}, function(tab) {
+      chrome.tabs.create({'url': chrome.extension.getURL('index.html')}, function(tab) {
         // Tab opened.
       });
       break;
