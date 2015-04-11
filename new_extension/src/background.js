@@ -2,7 +2,7 @@ var app = (function () {
   'use strict';
 
   var app = {},
-    serverUrl = 'http://192.168.34.69:3000/',
+    serverUrl = 'http://localhost:3000/',
     config = {
       iceServers: [{
         url: 'stun:stun.l.google.com:19302'
@@ -129,21 +129,24 @@ var app = (function () {
 
         if (message === 'Console.messageAdded') {
           console.debug(params.message.text);
-          text = JSON.stringify({kind: 'console', obj: params.message});
+          text = JSON.stringify({kind: 'console', obj: params.message, date: new Date()});
 
           app.sendMessageToChannel(text);
         } else if (message === 'Network.requestWillBeSent') {
           console.debug(params.request);
           text = JSON.stringify({
             kind: 'network.request',
-            obj: params.request
+            obj: params.request,
+            date: new Date()
           });
 
           app.sendMessageToChannel(text);
         } else if (message === 'Network.responseReceived') {
           console.debug(params.response);
           text = JSON.stringify({
-            kind: 'network.response', obj: params.response
+            kind: 'network.response',
+            obj: params.response,
+            date: new Date()
           });
 
           app.sendMessageToChannel(text);
