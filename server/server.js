@@ -4,6 +4,20 @@ app.use(express.static('static'));
 var http = require('http').Server(app),
   io = require('socket.io')(http);
 
+
+
+var fs = require('fs');
+
+var options = {
+  key: fs.readFileSync(__dirname + '/ssl/key.pem'),
+  cert: fs.readFileSync(__dirname + '/ssl/cert.pem')
+};
+
+var app1 = express();
+app1.use(express.static('static'));
+var https = require('https').createServer(options, app1).listen(3001);
+io = require('socket.io')(https);
+
 var portNumber = 3000;
 http.listen(portNumber);
 console.log('Listening ' + portNumber);
