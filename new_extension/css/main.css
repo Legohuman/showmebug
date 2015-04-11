@@ -42,3 +42,11 @@
   background: #fff;
   overflow-y: scroll;
 }
+
+#consoleWrapper.high{
+  height: 500px;
+}
+
+#consoleToolbar{
+  margin-bottom: 1rem;
+}

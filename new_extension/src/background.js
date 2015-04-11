@@ -129,7 +129,7 @@ var app = (function () {
 
         if (message === 'Console.messageAdded') {
           console.debug(params.message.text);
-          text = JSON.stringify({kind: 'console', obj: params.message, date: new Date()});
+          text = JSON.stringify({kind: 'console', obj: params.message, timeStamp: new Date().getTime()});
 
           app.sendMessageToChannel(text);
         } else if (message === 'Network.requestWillBeSent') {
@@ -137,7 +137,7 @@ var app = (function () {
           text = JSON.stringify({
             kind: 'network.request',
             obj: params.request,
-            date: new Date()
+            timeStamp: new Date().getTime()
           });
 
           app.sendMessageToChannel(text);
@@ -146,7 +146,7 @@ var app = (function () {
           text = JSON.stringify({
             kind: 'network.response',
             obj: params.response,
-            date: new Date()
+            timeStamp: new Date().getTime()
           });
 
           app.sendMessageToChannel(text);
