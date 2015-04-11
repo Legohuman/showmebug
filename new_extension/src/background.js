@@ -38,6 +38,33 @@ var app = (function () {
     });
   }
 
+
+  function room() {
+    return '666';
+  }
+
+  function pub(peerName) {
+    return {
+      name: peerName,
+      role: 'pub'
+    }
+  }
+
+  function sub(peerName) {
+    return {
+      name: peerName,
+      role: 'sub'
+    }
+  }
+
+  app.createRoom = function (peerName) {
+    socket.emit('join', pub(peerName), room());
+  };
+
+  app.startRoom = function (peerName) {
+    socket.emit('join', sub(peerName), room());
+  };
+
   app.sendMessageToChannel = function (text) {
     if (channelOpened) {
       sendChannel.send(text);
@@ -145,6 +172,10 @@ var app = (function () {
     }
   });
 
+  socket.on('joined', function (peer, room) {
+    console.log('Join: ' + peer + ' : room' + room);
+  });
+
   socket.on('ready', function (message) {
     console.log('ready message');
   });
@@ -157,7 +188,15 @@ var app = (function () {
 chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
   'use strict';
 
+  console.log('Get message from popup: ' + msg.method);
+
   switch (msg.method) {
+    case 'createRoom':
+      app.createRoom(msg.name);
+      break;
+    case 'startRoom':
+      app.startRoom(msg.name);
+      break;
     case 'toggleStart':
       if (app.states.stopped === app.extensionState) {
         app.start();
@@ -166,7 +205,7 @@ chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
       }
       break;
     case 'join':
-      chrome.tabs.create({'url': chrome.extension.getURL('index.html')}, function(tab) {
+      chrome.tabs.create({'url': chrome.extension.getURL('test.html')}, function(tab) {
         // Tab opened.
       });
       break;

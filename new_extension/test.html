@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <title>Test rooms page</title>
+</head>
+<body>
+<div>
+  <label for="roomUid">Room Id</label>
+  <input type="text" id="roomUid"/>
+</div>
+
+<div>
+  <label for="peerName">Peer Name</label>
+  <input type="text" id="peerName"/>
+</div>
+
+<div>
+  <label for="message">Message</label>
+  <input type="text" id="message"/>
+</div>
+<div>
+  <h3>Response</h3>
+
+  <div id="response"></div>
+</div>
+
+<div>
+  <button id="createRoom">Create room</button>
+  <button id="joinRoom">Join room</button>
+  <button id="leaveRoom">Leave room</button>
+  <button id="destroyRoom">Destroy room</button>
+  <button id="sendMessage">Send message</button>
+  <button id="listRooms">List rooms</button>
+  <button id="listPeers">List peers</button>
+</div>
+
+<script src="lib/jquery-2.1.3.min.js"></script>
+<script src="lib/adapter.js"></script>
+<script src="lib/socket.io-1.3.4.js"></script>
+<script src="src/test.js"></script>
+
+</body>
+</html>
