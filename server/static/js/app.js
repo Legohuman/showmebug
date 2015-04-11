@@ -45,7 +45,7 @@
 
     setTimeout(function () {
       console.log('Answering to extension');
-      pc.createAnswer(gotDescription);
+      pc.createAnswer(gotDescription, function(err){console.error(err);});
     }, 2000); //mysterious timeout, does not work without it
 
 
