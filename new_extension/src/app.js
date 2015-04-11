@@ -2,13 +2,13 @@
   'use strict';
 
   var $loginView = $('#loginView'),
-      $mainView = $('#mainView'),
-      $selectRoomButton = $('#selectRoomButton'),
-      $continueButton = $('#continueButton'),
-      $peerNameInput = $('#peerNameInput'),
-      $peerName = $('#peerName'),
-      $roomName = $('#roomName'),
-      $roomList = $('#roomList');
+    $mainView = $('#mainView'),
+    $selectRoomButton = $('#selectRoomButton'),
+    $continueButton = $('#continueButton'),
+    $peerNameInput = $('#peerNameInput'),
+    $peerName = $('#peerName'),
+    $roomName = $('#roomName'),
+    $roomList = $('#roomList');
   $loginView.show();
 
   $selectRoomButton.click(function () {
@@ -25,12 +25,12 @@
     }
   });
 
-  var serverUrl = 'http://localhost:3000/',
-      config = {
-    iceServers: [{
-      url: 'stun:stun.l.google.com:19302'
-    }]
-  };
+  var serverUrl = 'http://192.168.34.69:3000/',
+    config = {
+      iceServers: [{
+        url: 'stun:stun.l.google.com:19302'
+      }]
+    };
   var socket = io(serverUrl);
   var pc;
   var dataChannel;
@@ -71,7 +71,7 @@
       $('#tabShare').attr('src', URL.createObjectURL(evt.stream));
     };
 
-    pc.onremovestream = function(evt){
+    pc.onremovestream = function (evt) {
       console.log('Tab share stream added');
       $('#videoWrapper .overlay').show();
       $('#tabShare').removeAttr('src');
@@ -81,7 +81,13 @@
   function setChannelEvents(channel) {
     channel.onmessage = function (event) {
       console.debug('Ext: ', event.data);
-      JSON.stringify(event.data)
+      $('<div class="item">' +
+      '<i class="map marker icon"></i>' +
+      '<div class="content">' +
+      '<a class="header">Console</a>' +
+      '<div class="description">' + JSON.stringify(event.data) + '</div>' +
+      '</div>' +
+      '</div>').appendTo($('#allMessages'));
     };
     channel.onopen = function () {
       console.debug('Channel opened');
@@ -103,7 +109,7 @@
       roomName +
       '</a>');
       var roomToJoin = roomName;
-      $roomConnectLink.click(function(){
+      $roomConnectLink.click(function () {
         socket.emit('join', {
           name: $peerName.text(),
           role: 'sub'
@@ -113,7 +119,7 @@
     }
   });
 
-  socket.on('joined', function(peer, room){
+  socket.on('joined', function (peer, room) {
     console.log('joined', peer, room);
     $roomName.text(room);
   });

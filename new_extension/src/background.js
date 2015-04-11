@@ -2,7 +2,7 @@ var app = (function () {
   'use strict';
 
   var app = {},
-    serverUrl = 'http://localhost:3000/',
+    serverUrl = 'http://192.168.34.69:3000/',
     config = {
       iceServers: [{
         url: 'stun:stun.l.google.com:19302'

@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <title>Test page with bugs</title>
+</head>
+<body>
+
+<div>
+  <label for="consoleMessage">Console message</label>
+  <input type="text" id="consoleMessage"/>
+</div>
+<div>
+  <button id="undefVar">Undefined variable</button>
+  <button id="errorRequest">HTTP request error</button>
+  <button id="successRequest">Successful HTTP request</button>
+  <button id="consoleLog">Log to console</button>
+</div>
+
+<script src="/js/jquery-2.1.3.min.js"></script>
+<script>
+  (function(){
+    $(function(){
+      $('#undefVar').click(function(){
+        consol.log('Message won`t be show'); //error, it`s fine
+      });
+
+      $('#errorRequest').click(function(){
+        $.get('http://www.yaaaa.ru', function(){
+          //callback won`t be invoked
+          console.log('request done');
+        });
+      });
+
+      $('#successRequest').click(function(){
+        $.get('/test.html', function(){
+          console.log('request done');
+        });
+      });
+
+      $('#consoleLog').click(function(){
+        console.log($('#consoleMessage').val());
+      });
+    });
+  })();
+</script>
+</body>
+</html>

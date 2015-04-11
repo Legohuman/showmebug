@@ -141,9 +141,40 @@ io.on('connection', function (socket) {
     socket.emit('peers', peers);
   });
 
+  //handlers for debug info
+  socket.on('disconnect', function() {
+    console.log('Disconnect! socket ', socket.id);
+  });
+
+  socket.on('error', function() {
+    console.log('Connect error ', socket.id);
+  });
+
+  socket.on('reconnect', function() {
+    console.log('Reconnect ', socket.id);
+  });
+
+  socket.on('reconnect_attempt', function() {
+    console.log('Reconnect attempt ', socket.id);
+  });
+
+  socket.on('reconnecting', function() {
+    console.log('Reconnecting ', socket.id);
+  });
+
+  socket.on('reconnect_error', function() {
+    console.log('Reconnect error ', socket.id);
+  });
+
+  socket.on('reconnect_failed', function() {
+    console.log('Reconnect failed ', socket.id);
+  });
+
   function generateUid() {
     return Math.floor((1 + Math.random()) * 0x1000000000)
       .toString(10)
       .substring(1);
   }
 });
+
+
