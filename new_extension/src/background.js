@@ -1,184 +1,175 @@
 var app = (function () {
   'use strict';
 
-  var app = {},
-    serverUrl = 'http://localhost:3000/',
-    config = {
-      iceServers: [{
-        url: 'stun:stun.l.google.com:19302'
-      }]
-    },
-    socket = io(serverUrl),
-    pc,
-    sendChannel,
-    channelOpened = false,
-    tabId;
+  var serverUrl = 'http://localhost:3000/',
+      config = {
+        iceServers: [{
+          url: 'stun:stun.l.google.com:19302'
+        }]
+      },
+      socket = io(serverUrl),
+      pc,
+      messageDebugger,
+      currentRoom = null,
+      createRoom = function (peerName) {
+        console.log('create room, socket id', socket.id, peerName);
+        socket.emit('join', { name: peerName, role: 'pub' }, null);
+      },
+      getRoom = function () {
+        return currentRoom;
+      },
+      getTabMedia = function (successCallback) {
+        chrome.tabs.query({active: true, currentWindow: true}, function () {
+          var constraints = {
+            audio: false,
+            video: true,
+            videoConstraints: {
+              mandatory: {
+                chromeMediaSource: 'tab'
+              }
+            }
+          };
 
-  app.states = {
-    stopped: 'stopped',
-    starting: 'starting',
-    started: 'started',
-    stopping: 'stopping'
-  };
-  app.extensionState = app.states.stopped;
+          chrome.tabCapture.capture(constraints, successCallback);
+        });
+      },
+      start = function () {
+        pc = new RTCPeerConnection(config, {optional: [{RtpDataChannels: true}]});
+        messageDebugger = initDebugger(pc);
 
-  function getTabMedia(successCallback) {
-    chrome.tabs.query({active: true, currentWindow: true}, function () {
-      var constraints = {
-        audio: false,
-        video: true,
-        videoConstraints: {
-          mandatory: {
-            chromeMediaSource: 'tab'
+        messageDebugger.attach();
+
+        // send any ice candidates to the other peer
+        pc.onicecandidate = function (evt) {
+          console.log('Local candidate: ', evt);
+          socket.emit('message', {'candidate': evt.candidate});
+        };
+
+        //setPeerConnectionEvents(pc);
+
+        getTabMedia(function (stream) {
+          pc.addStream(stream);
+
+          console.log('Offer conection to view process page');
+          pc.createOffer(gotDescription);
+
+          function gotDescription(desc) {
+            pc.setLocalDescription(new RTCSessionDescription(desc));
+            console.log('Local sdp: ', desc);
+            console.log('Send sdp, socket id', socket.id);
+            socket.emit('message', {"sdp": desc});
           }
-        }
+        }, function (error) {
+          console.log('Error', error);
+        });
+      },
+      stop = function () {
+        socket.emit('leave');
       };
 
-      chrome.tabCapture.capture(constraints, successCallback);
-    });
-  }
+  //function setPeerConnectionEvents(pc) {
+  //  // send any ice candidates to the other peer
+  //  pc.onicecandidate = function (evt) {
+  //    console.log('Local candidate: ', evt);
+  //    socket.emit('message', {'candidate': evt.candidate});
+  //  };
+  //}
 
+  function initDebugger(pc) {
+    var version = "1.0",
+        tabId,
+        sendChannel,
+        channelOpened = false,
+        setChannelEvents = function (channel) {
+          channel.onmessage = function (event) {
+            console.debug('Ext: ', event.data);
+          };
+          channel.onopen = function () {
+            channelOpened = true;
+            console.debug('Channel opened');
+          };
+          channel.onclose = function (e) {
+            channelOpened = false;
+            console.error(e);
+          };
+          channel.onerror = function (e) {
+            console.error(e);
+          };
+        },
+        sendMessageToChannel = function (text) {
+          if (channelOpened) {
+            sendChannel.send(text);
+          }
+        },
+        onAttach = function () {
+          if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError.message);
+          }
+        },
+        onEvent = function (debuggeeId, message, params) {
+          var text;
 
-  function room() {
-    return null;
-  }
+          if (tabId != debuggeeId.tabId) {
+            return;
+          }
 
-  function pub(peerName) {
-    return {
-      name: peerName,
-      role: 'pub'
-    }
-  }
+          if (message === 'Console.messageAdded') {
+            console.debug(params.message.text);
+            text = JSON.stringify({kind: 'console', obj: params.message, timeStamp: new Date().getTime()});
 
-  function sub(peerName) {
-    return {
-      name: peerName,
-      role: 'sub'
-    }
-  }
+            sendMessageToChannel(text);
+          } else if (message === 'Network.requestWillBeSent') {
+            console.debug(params.request);
+            text = JSON.stringify({
+              kind: 'network.request',
+              obj: params.request,
+              timeStamp: new Date().getTime()
+            });
 
-  app.createRoom = function (peerName) {
-    console.log('create room, socket id', socket.id, peerName);
-    socket.emit('join', pub(peerName), room());
-  };
+            sendMessageToChannel(text);
+          } else if (message === 'Network.responseReceived') {
+            console.debug(params.response);
+            text = JSON.stringify({
+              kind: 'network.response',
+              obj: params.response,
+              timeStamp: new Date().getTime()
+            });
 
-  app.sendMessageToChannel = function (text) {
-    if (channelOpened) {
-      sendChannel.send(text);
-    }
-  };
+            sendMessageToChannel(text);
+          }
+        },
+        attach = function () {
+          chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
+            tabId = tabs[0].id;
 
-// run start(true) to initiate a call
-  app.start = function () {
-    app.extensionState = app.states.starting;
-    pc = new RTCPeerConnection(config, {optional: [{RtpDataChannels: true}]});
+            chrome.debugger.attach({tabId: tabId}, version, onAttach.bind(null, tabId));
+            chrome.debugger.sendCommand({tabId: tabId}, "Network.enable");
+            chrome.debugger.sendCommand({tabId: tabId}, "Console.enable");
 
+            chrome.debugger.onEvent.addListener(onEvent);
+          });
+        },
+        detach = function () {
+          chrome.debugger.detach({tabId: tabId});
+          sendChannel.close();
+        };
+
+    // init data channel
     sendChannel = pc.createDataChannel('RTCDataChannel', {reliable: false});
-    setChannelEvents(sendChannel, 'sendChannel');
+    setChannelEvents(sendChannel);
 
-    attachDebugger();
-
-    setPeerConnectionEvents(pc);
-
-    getTabMedia(function (stream) {
-      pc.addStream(stream);
-
-      console.log('Offer conection to view process page');
-      pc.createOffer(gotDescription);
-
-      function gotDescription(desc) {
-        pc.setLocalDescription(new RTCSessionDescription(desc));
-        console.log('Local sdp: ', desc);
-        console.log('Send sdp, socket id', socket.id);
-        socket.emit('message', {"sdp": desc});
-      }
-    }, function (error) {
-      console.log('Error', error);
-    })
-  };
-
-  app.stop = function () {
-    app.extensionState = app.states.stopping;
-    chrome.debugger.detach({tabId: tabId});
-    //todo
-    app.extensionState = app.states.stopped;
-  };
-
-  function attachDebugger() {
-    chrome.tabs.query({currentWindow: true, active: true}, function (tabs) {
-      var version = "1.0";
-      tabId = tabs[0].id;
-      chrome.debugger.attach({tabId: tabId}, version, onAttach.bind(null, tabId));
-
-      function onAttach() {
-        if (chrome.runtime.lastError) {
-          alert(chrome.runtime.lastError.message);
-        }
-      }
-
-      chrome.debugger.sendCommand({tabId: tabId}, "Network.enable");
-      chrome.debugger.sendCommand({tabId: tabId}, "Console.enable");
-      chrome.debugger.onEvent.addListener(onEvent);
-
-      function onEvent(debuggeeId, message, params) {
-        var text;
-
-        if (tabId != debuggeeId.tabId) {
-          return;
-        }
-
-        if (message === 'Console.messageAdded') {
-          console.debug(params.message.text);
-          text = JSON.stringify({kind: 'console', obj: params.message, timeStamp: new Date().getTime()});
-
-          app.sendMessageToChannel(text);
-        } else if (message === 'Network.requestWillBeSent') {
-          console.debug(params.request);
-          text = JSON.stringify({
-            kind: 'network.request',
-            obj: params.request,
-            timeStamp: new Date().getTime()
-          });
-
-          app.sendMessageToChannel(text);
-        } else if (message === 'Network.responseReceived') {
-          console.debug(params.response);
-          text = JSON.stringify({
-            kind: 'network.response',
-            obj: params.response,
-            timeStamp: new Date().getTime()
-          });
-
-          app.sendMessageToChannel(text);
-        }
-      }
-    });
+    return {
+      attach: attach,
+      detach: detach
+    }
   }
 
-  function setPeerConnectionEvents(pc) {
-    // send any ice candidates to the other peer
-    pc.onicecandidate = function (evt) {
-      console.log('Local candidate: ', evt);
-      socket.emit('message', {'candidate': evt.candidate});
-    };
-  }
+  socket.on('joined', function (peer, room) {
+    console.log('Join: ' + peer + ' : room ' + room);
 
-  function setChannelEvents(channel) {
-    channel.onmessage = function (event) {
-      console.debug('Ext: ', event.data);
-    };
-    channel.onopen = function () {
-      channelOpened = true;
-      console.debug('Channel opened');
-    };
-    channel.onclose = function (e) {
-      channelOpened = false;
-      console.error(e);
-    };
-    channel.onerror = function (e) {
-      console.error(e);
-    };
-  }
+    currentRoom = room;
+    chrome.extension.sendMessage({roomUID: room});
+  });
 
   socket.on('message', function (message) {
     if (message.sdp) {
@@ -189,24 +180,22 @@ var app = (function () {
       if(message.candidate){
         pc.addIceCandidate(new RTCIceCandidate(message.candidate));
       }
-
-      app.extensionState = app.states.started;
     }
   });
 
-  socket.on('joined', function (peer, room) {
-    console.log('Join: ' + peer + ' : room ' + room);
-
-    app.currentRoom = room;
-
-    chrome.extension.sendMessage({roomUID: room});
+  socket.on('leaved', function (peer, name) {
+    currentRoom = null;
+    messageDebugger.detach();
+    pc.getLocalStreams()[0].stop(); // close video stream
+    pc.close();
   });
 
-  socket.on('ready', function (message) {
-    console.log('ready message');
-  });
-
-  return app;
+  return {
+    createRoom: createRoom,
+    getRoom: getRoom,
+    start: start,
+    stop: stop
+  };
 })();
 
 
@@ -218,19 +207,18 @@ chrome.extension.onMessage.addListener(function(msg, sender, sendResponse) {
 
   switch (msg.method) {
     case 'popupInit':
-      if (app.currentRoom) {
-        chrome.extension.sendMessage({roomUID: app.currentRoom});
+      if (app.getRoom()) {
+        chrome.extension.sendMessage({roomUID: app.getRoom()});
       }
       break;
     case 'createRoom':
       app.createRoom(msg.name);
       break;
-    case 'toggleStart':
-      if (app.states.stopped === app.extensionState) {
-        app.start();
-      } else if (app.states.started === app.extensionState) {
-        app.stop();
-      }
+    case 'startCapturing':
+      app.start();
+      break;
+    case 'stopCapturing':
+      app.stop();
       break;
     case 'join':
       chrome.tabs.create({'url': chrome.extension.getURL('index.html')}, function(tab) {

@@ -198,5 +198,10 @@
         }
       }
     });
+
+    socket.on('leaved', function (peer, room) {
+      dataChannel.close();
+      pc.close();
+    });
   });
 })();

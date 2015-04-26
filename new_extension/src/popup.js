@@ -7,6 +7,7 @@
             $roomId = $('#roomId'),
 
             $toggleCapturing = $('#toggleCapturing'),
+            $stopCapturing = $('#stopCapturing'),
             $joinButton = $('#joinBtn');
 
         chrome.extension.onMessage.addListener(function (msg) {
@@ -23,9 +24,15 @@
         });
 
         $toggleCapturing.click(function () {
-            chrome.extension.sendMessage({method: 'toggleStart'});
+            chrome.extension.sendMessage({method: 'startCapturing'});
+            // TODO: add states: start and stop
             //$toggleCapturing.text('Stop capture');
             //$toggleCapturing.text('Start capture');
+            //chrome.extension.sendMessage({method: 'stopCapturing'});
+        });
+
+        $stopCapturing.click(function () {
+            chrome.extension.sendMessage({method: 'stopCapturing'});
         });
 
         $joinButton.click(function () {
